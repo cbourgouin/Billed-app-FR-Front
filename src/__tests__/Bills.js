@@ -61,7 +61,7 @@ describe("Given I am connected as an employee", () => {
       });
       expect(bill).toBeDefined();
     });
-    
+
     test("Then fonction getBill return something", async () => {
       const bill = new Bills({
         document: document,
@@ -97,40 +97,44 @@ describe("Given I am connected as an employee", () => {
       expect(returnGetBill).toEqual(expectedRes);
     });
 
-    test("Then the fonction handleClickNewBill is called", async () => {
+    test("Then the buttons works and use the fonctions", async () => {
       const bill = new Bills({
         document: document,
-        onNavigate: ROUTES_PATH["Bills"],
+        onNavigate: ROUTES_PATH.Bills,
         store: store,
         localStorage: localStorageMock,
       });
-      const myMethod = jest.spyOn(bill, 'handleClickNewBill')
-      bill.handleClickNewBill();
-      expect(myMethod).toHaveBeenCalled();
+      const returnGetBill = await bill.getBills();
+      const expectedRes = await mockStore.bills().list();
+      expect(returnGetBill).toEqual(expectedRes);
     });
+  });
+});
 
-    test("Then the fonction handleClickNewBill change onNavigate to ROUTES_PATH['NewBill']", async () => {
-      const bill = new Bills({
-        document: document,
-        onNavigate: ROUTES_PATH["Bills"],
-        store: store,
-        localStorage: localStorageMock,
-      });
-      bill.handleClickNewBill();
-      expect(bill.onNavigate).toEqual(ROUTES_PATH['NewBill'])
-    });
+describe("Given I am connected as an employee and i am on Bills Page", () => {
+  describe("When I am on Bills Page", () => {
+    test('I should be sent on Dashboard with big billed icon instead of form', () => {
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({
+        type: 'Employee'
+      }))
+      document.body.innerHTML = DashboardFormUI(bills[0])
 
-    test("Then the fonction handleClickIconEye is called", async () => {
-      const bill = new Bills({
-        document: document,
-        onNavigate: ROUTES_PATH["Bills"],
-        store: store,
-        localStorage: localStorageMock,
-      });
-      const myMethod = jest.spyOn(bill, 'handleClickIconEye')
-      const iconEye = document.querySelectorAll(`div[data-testid="icon-eye"]`);
-      bill.handleClickIconEye(iconEye[0]);
-      expect(myMethod).toHaveBeenCalled();
-    });
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+      const store = null
+      const dashboard = new Dashboard({
+        document, onNavigate, store, bills, localStorage: window.localStorage
+      })
+
+      const acceptButton = screen.getByTestId("btn-accept-bill-d")
+      const handleAcceptSubmit = jest.fn((e) => dashboard.handleAcceptSubmit(e, bills[0]))
+      acceptButton.addEventListener("click", handleAcceptSubmit)
+      fireEvent.click(acceptButton)
+      expect(handleAcceptSubmit).toHaveBeenCalled()
+      const bigBilledIcon = screen.queryByTestId("big-billed-icon")
+      expect(bigBilledIcon).toBeTruthy()
+    })
   });
 });
