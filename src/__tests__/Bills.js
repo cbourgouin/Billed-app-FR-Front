@@ -109,32 +109,102 @@ describe("Given I am connected as an employee", () => {
       expect(returnGetBill).toEqual(expectedRes);
     });
   });
+  
+//test d'integration
+  describe("When i am on Bills Page and i click on the icon eye of the first element", () => {
+    test("Then the document appears", async () => {
+      localStorage.setItem("user", JSON.stringify({ type: "employee", email: "emloyee@test.tld" }));
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.append(root)
+      router()
+      window.onNavigate(ROUTES_PATH.Bills)
+      await waitFor(() => screen.getByText("Hôtel et logement"))
+      screen.getAllByTestId('icon-eye')[0].click();
+      const modal = await screen.getByTestId("modaleFile")
+      expect(modal).toBeVisible()
+    });
+  });
+
+  describe("When i am on Bills Page and i click on the new Bill button", () => {
+    test("Then the page http://127.0.0.1:5500/#employee/bill/new appeard", async () => {
+      localStorage.setItem("user", JSON.stringify({ type: "employee", email: "emloyee@test.tld" }));
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.append(root)
+      router()
+      window.onNavigate(ROUTES_PATH.Bills)
+      screen.getByTestId('btn-new-bill').click();
+      expect(window.location.href).toBe('http://127.0.0.1:5500/#employee/bill/new');
+    });
+  });
 });
 
-describe("Given I am connected as an employee and i am on Bills Page", () => {
-  describe("When I am on Bills Page", () => {
-    test('I should be sent on Dashboard with big billed icon instead of form', () => {
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+// test d'intégration GET
+describe("Given I am connected as an employee", () => {
+  describe("When i am on Bills Page", () => {
+    test('fetches bills from mock API GET', async () => {
+      localStorage.setItem("user", JSON.stringify({ type: "employee", email: "emloyee@test.tld" }));
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.append(root)
+      router()
+      window.onNavigate(ROUTES_PATH.Bills)
+      await waitFor(() => screen.getByText("Hôtel et logement"))
+      const contentRefused = await screen.getByText("Refused")
+      expect(contentRefused).toBeTruthy()
+      const contentAccepte = await screen.getByText("Accepté")
+      expect(contentAccepte).toBeTruthy()
+      const contentPending = await screen.getByText("En attente")
+      expect(contentPending).toBeTruthy()
+    });
+  });
+
+  describe("When an error occurs on API", () => {
+    beforeEach(() => {
+      jest.spyOn(mockStore, "bills")
+      Object.defineProperty(
+          window,
+          'localStorage',
+          { value: localStorageMock }
+      )
       window.localStorage.setItem('user', JSON.stringify({
-        type: 'Employee'
+        type: "Employee",
+        email: "emloyee@test.tld"
       }))
-      document.body.innerHTML = DashboardFormUI(bills[0])
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.appendChild(root)
+      router()
+    });
 
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname })
-      }
-      const store = null
-      const dashboard = new Dashboard({
-        document, onNavigate, store, bills, localStorage: window.localStorage
-      })
+    test("fetches bills from an API and fails with 404 message error", async () => {
 
-      const acceptButton = screen.getByTestId("btn-accept-bill-d")
-      const handleAcceptSubmit = jest.fn((e) => dashboard.handleAcceptSubmit(e, bills[0]))
-      acceptButton.addEventListener("click", handleAcceptSubmit)
-      fireEvent.click(acceptButton)
-      expect(handleAcceptSubmit).toHaveBeenCalled()
-      const bigBilledIcon = screen.queryByTestId("big-billed-icon")
-      expect(bigBilledIcon).toBeTruthy()
-    })
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 404"))
+          }
+        }})
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 404/)
+      expect(message).toBeTruthy()
+    });
+
+    test("fetches messages from an API and fails with 500 message error", async () => {
+
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 500"))
+          }
+        }})
+
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 500/)
+      expect(message).toBeTruthy()
+    });
   });
 });
