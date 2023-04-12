@@ -17,7 +17,7 @@ export default class {
   }
 
   handleClickNewBill = () => {
-    this.onNavigate(ROUTES_PATH['NewBill'])
+    thisonNavigate.onNavigate(ROUTES_PATH['NewBill'])
   }
 
   handleClickIconEye = (icon) => {
@@ -26,7 +26,7 @@ export default class {
     $('#modaleFile').find(".modal-body").html(`<div style='text-align: center;' class="bill-proof-container"><img width=${imgWidth} src=${billUrl} alt="Bill" /></div>`)
     $('#modaleFile').modal('show')
   }
-
+é
   getBills = () => {
     if (this.store) {
       return this.store
