@@ -5,13 +5,18 @@
 import { fireEvent, screen, waitFor } from "@testing-library/dom";
 import NewBillUI from "../views/NewBillUI.js";
 import NewBill from "../containers/NewBill.js";
-import { ROUTES_PATH } from "../constants/routes.js";
+import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import mockStore from "../__mocks__/store";
 import store from "../app/Store";
 import router from "../app/Router";
 
 jest.mock("../app/Store", () => mockStore);
+
+ // we have to mock navigation to test it
+ const onNavigate = (pathname) => {
+  document.body.innerHTML = ROUTES({ pathname });
+};
 
 describe("Given I am connected as an employee", () => {
   //test Unitaire
@@ -49,4 +54,6 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput[0].files[0]).toBe(file);
     });
   });
+
+  
 });
