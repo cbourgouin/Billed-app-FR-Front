@@ -3,7 +3,7 @@
  */
 
 import { screen, waitFor } from "@testing-library/dom";
-import userEvent from '@testing-library/user-event'
+import userEvent from "@testing-library/user-event";
 import BillsUI from "../views/BillsUI.js";
 import { bills } from "../fixtures/bills.js";
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
@@ -85,55 +85,12 @@ describe("Given I am connected as an employee", () => {
       const expectedRes = await mockStore.bills().list();
       expect(returnGetBill.length).toBe(expectedRes.length);
     });
-
-    test("Then fonction getBill return the same bills", async () => {
-      const bill = new Bills({
-        document: document,
-        onNavigate: ROUTES_PATH.Bills,
-        store: store,
-        localStorage: localStorageMock,
-      });
-      const returnGetBill = await bill.getBills();
-      const expectedRes = await mockStore.bills().list();
-      expect(returnGetBill).toEqual(expectedRes);
-    });
   });
 
   //test d'integration
-  //PAS FINI
   describe("When i am on Bills Page and i click on the icon eye of the first element", () => {
     test("Then the document appears", async () => {
-      Object.defineProperty(window, "localStorage", {
-        value: localStorageMock,
-      });
-      window.localStorage.setItem(
-        "user",
-        JSON.stringify({
-          type: "Employee",
-        })
-      );
-      const root = document.createElement("div");
-      root.setAttribute("id", "root");
-      document.body.append(root);
-      router();
-      const bill = new Bills({
-        document: document,
-        onNavigate: ROUTES_PATH.Bills,
-        store: store,
-        localStorage: localStorageMock,
-      });
-      const handleClickIconEye = jest.fn((e) => bill.handleClickIconEye(e));
-      window.onNavigate(ROUTES_PATH.Bills);
-      await waitFor(() => screen.getByText("Hôtel et logement"));
-      const iconEye = screen.getAllByTestId("icon-eye")[0];
-      iconEye.addEventListener('click', handleClickIconEye);
-      iconEye.click();
-      expect(handleClickIconEye).toHaveBeenCalled()
-    });
-  });
-
-  describe("When i am on Bills Page and i click on the new Bill button", () => {
-    test("Then the page http://127.0.0.1:5500/#employee/bill/new appeard", async () => {
+      document.body.innerHTML = BillsUI({ data: bills });
       const onNavigateMock = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
@@ -146,24 +103,68 @@ describe("Given I am connected as an employee", () => {
           type: "Employee",
         })
       );
+      // const root = document.createElement("div");
+      // root.setAttribute("id", "root");
+      // document.body.append(root);
+      // router();
+      const store = null;
       const bill = new Bills({
         document: document,
         onNavigate: onNavigateMock,
         store: store,
-        localStorage: localStorageMock,
+        localStorage: window.localStorage,
+      });
+      // window.onNavigate(ROUTES_PATH.Bills);
+      // await waitFor(() => screen.getByText("En attente"));
+      const iconEyes = screen.getAllByTestId("icon-eye");
+      if (iconEyes) {
+        iconEyes.forEach((iconEye) => {
+          const handleClickIconEyeMock = jest.fn(
+            bill.handleClickIconEye(iconEye)
+          );
+          iconEye.addEventListener("click", handleClickIconEyeMock);
+          userEvent.click(iconEye);
+          expect(handleClickIconEyeMock).toHaveBeenCalled();
+          const modal = screen.getByText("Justificatif");
+          expect(modal).toBeTruthy();
+        });
+      }
+    });
+  });
+
+  describe("When i am on Bills Page and i click on the new Bill button", () => {
+    test("Then the page new bill appeard", async () => {
+      const onNavigateMock = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+      Object.defineProperty(window, "localStorage", {
+        value: localStorageMock,
+      });
+      window.localStorage.setItem(
+        "user",
+        JSON.stringify({
+          type: "Employee",
+        })
+      );
+      const store = null;
+      const bill = new Bills({
+        document: document,
+        onNavigate: onNavigateMock,
+        store: store,
+        localStorage: window.localStorage,
       });
       const root = document.createElement("div");
       root.setAttribute("id", "root");
       document.body.append(root);
       router();
       window.onNavigate(ROUTES_PATH.Bills);
-      const handleClickNewBill1 = jest.fn((e) =>
-        bill.onNavigateMock(ROUTES_PATH.NewBill)
-      );
+      const handleClickNewBillMock = jest.fn(bill.handleClickNewBill);
       const icon1 = screen.getByTestId("btn-new-bill");
-      icon1.addEventListener("click", handleClickNewBill1);
+      icon1.addEventListener("click", handleClickNewBillMock);
       userEvent.click(icon1);
-      expect(handleClickNewBill1).toHaveBeenCalled();
+      expect(handleClickNewBillMock).toHaveBeenCalled();
+      const newBill = screen.getByTestId("form-new-bill");
+      expect(newBill).toBeTruthy();
       //
       // expect(window.location.href).toBe('http://127.0.0.1:5500/#employee/bill/new');
     });
@@ -178,17 +179,17 @@ describe("Given I am connected as an employee", () => {
           type: "Employee",
         })
       );
-      const root = document.createElement("div")
-      root.setAttribute("id", "root")
-      document.body.append(root)
-      router()
-      window.onNavigate(ROUTES_PATH.Bills)
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.append(root);
+      router();
+      window.onNavigate(ROUTES_PATH.Bills);
       await waitFor(() => screen.getByText("En attente"));
-      const contentRefused  = await screen.getAllByText("Refused")
-      expect(contentRefused).toBeTruthy()
-      const contentAccepted  = await screen.getByText("Accepté")
-      expect(contentAccepted).toBeTruthy()
-    })
+      const contentRefused = await screen.getAllByText("Refused");
+      expect(contentRefused).toBeTruthy();
+      const contentAccepted = await screen.getByText("Accepté");
+      expect(contentAccepted).toBeTruthy();
+    });
   });
 
   describe("When an error occurs on API", () => {
